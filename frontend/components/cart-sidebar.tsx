@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cartAPI, CartItem } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { ShoppingCart, Plus, Minus, Trash2, X } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CartSidebarProps {
@@ -79,7 +79,7 @@ export default function CartSidebar({ open, onOpenChange, onCartUpdate }: CartSi
   if (!isAuthenticated) {
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-[400px] sm:w-[540px]">
+        <SheetContent className="w-full sm:w-[400px] lg:w-[500px]">
           <SheetHeader>
             <SheetTitle>Shopping Cart</SheetTitle>
           </SheetHeader>
@@ -97,18 +97,9 @@ export default function CartSidebar({ open, onOpenChange, onCartUpdate }: CartSi
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[400px] sm:w-[540px] flex flex-col">
+      <SheetContent className="w-full sm:w-[400px] lg:w-[500px] flex flex-col">
         <SheetHeader>
-          <SheetTitle className="flex items-center justify-between">
-            <span>Shopping Cart ({cartItems.length})</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </SheetTitle>
+          <SheetTitle>Shopping Cart ({cartItems.length})</SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto py-4">
@@ -116,7 +107,7 @@ export default function CartSidebar({ open, onOpenChange, onCartUpdate }: CartSi
             <div className="space-y-4">
               {[1, 2].map((i) => (
                 <div key={i} className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gray-200 rounded animate-pulse" />
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 rounded animate-pulse" />
                   <div className="flex-1">
                     <div className="h-4 bg-gray-200 rounded animate-pulse mb-2" />
                     <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
@@ -133,42 +124,47 @@ export default function CartSidebar({ open, onOpenChange, onCartUpdate }: CartSi
           ) : (
             <div className="space-y-4">
               {cartItems.map((item) => (
-                <div key={item.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                <div key={item.id} className="flex items-start space-x-3 p-3 border rounded-lg">
                   <img
                     src={item.imageUrl}
                     alt={item.name}
-                    className="w-16 h-16 object-cover rounded"
+                    className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded flex-shrink-0"
                   />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{item.name}</h4>
-                    <p className="text-sm text-gray-500">${item.price.toFixed(2)} each</p>
-                    <p className="font-medium text-blue-600">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-gray-900 text-sm sm:text-base truncate">{item.name}</h4>
+                    <p className="text-xs sm:text-sm text-gray-500">${item.price.toFixed(2)} each</p>
+                    <p className="font-medium text-blue-600 text-sm sm:text-base">
                       ${(item.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                      disabled={updating === item.productId || item.quantity <= 1}
-                    >
-                      <Minus className="w-3 h-3" />
-                    </Button>
-                    <span className="w-8 text-center font-medium">{item.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                      disabled={updating === item.productId}
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        disabled={updating === item.productId || item.quantity <= 1}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      <span className="w-6 text-center font-medium text-sm">{item.quantity}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        disabled={updating === item.productId}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => removeItem(item.productId)}
                       disabled={updating === item.productId}
+                      className="h-7 w-full text-xs"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
@@ -180,7 +176,7 @@ export default function CartSidebar({ open, onOpenChange, onCartUpdate }: CartSi
         </div>
 
         {cartItems.length > 0 && (
-          <div className="border-t pt-4 space-y-4">
+          <div className="border-t pt-4 space-y-4 mt-auto p-4">
             <div className="flex justify-between items-center text-lg font-semibold">
               <span>Total:</span>
               <span className="text-blue-600">${total}</span>
