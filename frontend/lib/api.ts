@@ -116,3 +116,11 @@ export const cartAPI = {
     });
   }
 };
+
+export const checkoutAPI = {
+  createSession: async () => {
+    return apiCall('/api/checkout/create-session', {
+      method: 'POST',
+    });
+  }
+};

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import Stripe from "stripe";
 import { db } from "./db";
 import { cartItems, products, users } from "./db/schema";
 import { comparePassword, generateToken } from "./auth";
@@ -8,6 +9,14 @@ import { AuthContext, authMiddleware } from "./middleware";
 import { and, eq } from "drizzle-orm";
 
 const app = new Hono();
+
+// Initialize Stripe
+const stripe = new Stripe(
+  process.env.STRIPE_SECRET_KEY || "sk_test_your_key_here",
+  {
+    apiVersion: "2024-06-20",
+  },
+);
 
 // Add logger middleware
 app.use("/*", logger());
@@ -272,6 +281,66 @@ app.delete("/api/cart/clear", async (c: AuthContext) => {
   } catch (error) {
     console.error("❌ Clear cart error:", error);
     return c.json({ error: "Failed to clear cart" }, 500);
+  }
+});
+
+// Stripe Checkout Routes
+app.use("/api/checkout/*", authMiddleware);
+
+// Create Stripe checkout session
+app.post("/api/checkout/create-session", async (c: AuthContext) => {
+  try {
+    console.log(`💳 Creating checkout session for user: ${c.user!.id}`);
+
+    // Get user's cart
+    const userCartItems = await db
+      .select({
+        id: cartItems.id,
+        productId: cartItems.productId,
+        quantity: cartItems.quantity,
+        name: products.name,
+        price: products.price,
+        imageUrl: products.imageUrl,
+      })
+      .from(cartItems)
+      .innerJoin(products, eq(cartItems.productId, products.id))
+      .where(eq(cartItems.userId, c.user!.id));
+
+    if (userCartItems.length === 0) {
+      console.log("❌ Empty cart for checkout");
+      return c.json({ error: "Cart is empty" }, 400);
+    }
+
+    // Create Stripe line items
+    const lineItems = userCartItems.map((item) => ({
+      price_data: {
+        currency: "usd",
+        product_data: {
+          name: item.name,
+          images: [item.imageUrl],
+        },
+        unit_amount: Math.round(item.price * 100), // Stripe uses cents
+      },
+      quantity: item.quantity,
+    }));
+
+    // Create hosted checkout session (redirect)
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      mode: 'payment',
+      success_url: `${c.req.header('origin') || 'http://localhost:3000'}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${c.req.header('origin') || 'http://localhost:3000'}/`,
+      metadata: {
+        userId: c.user!.id.toString(),
+      },
+    });
+
+    console.log(`✅ Hosted checkout session created: ${session.id}`);
+    return c.json({ url: session.url });
+  } catch (error) {
+    console.error("❌ Checkout session error:", error);
+    return c.json({ error: "Failed to create checkout session" }, 500);
   }
 });
 

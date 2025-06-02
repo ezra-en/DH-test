@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { cartAPI, CartItem } from '@/lib/api';
+import { cartAPI, checkoutAPI, CartItem } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ export default function CartSidebar({ open, onOpenChange, onCartUpdate }: CartSi
   const [total, setTotal] = useState('0.00');
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState<number | null>(null);
+  const [checkingOut, setCheckingOut] = useState(false);
   const { isAuthenticated } = useAuth();
 
   const fetchCart = async () => {
@@ -71,9 +72,30 @@ export default function CartSidebar({ open, onOpenChange, onCartUpdate }: CartSi
     }
   };
 
-  const handleCheckout = () => {
-    // TODO: Implement Stripe checkout
-    toast.success('Checkout coming soon!');
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) {
+      toast.error('Your cart is empty');
+      return;
+    }
+
+    setCheckingOut(true);
+    try {
+      console.log('🚀 Starting checkout process...');
+      const response = await checkoutAPI.createSession();
+      
+      if (response.url) {
+        console.log('✅ Redirecting to Stripe checkout...');
+        // Redirect to Stripe Checkout
+        window.location.href = response.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('❌ Checkout error:', error);
+      toast.error('Failed to start checkout. Please try again.');
+    } finally {
+      setCheckingOut(false);
+    }
   };
 
   if (!isAuthenticated) {
@@ -176,7 +198,7 @@ export default function CartSidebar({ open, onOpenChange, onCartUpdate }: CartSi
         </div>
 
         {cartItems.length > 0 && (
-          <div className="border-t pt-4 space-y-4 mt-auto p-4">
+          <div className="border-t p-4 space-y-4 mt-auto">
             <div className="flex justify-between items-center text-lg font-semibold">
               <span>Total:</span>
               <span className="text-blue-600">${total}</span>
@@ -185,9 +207,19 @@ export default function CartSidebar({ open, onOpenChange, onCartUpdate }: CartSi
               onClick={handleCheckout} 
               className="w-full bg-blue-600 hover:bg-blue-700"
               size="lg"
+              disabled={checkingOut}
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Checkout
+              {checkingOut ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Checkout
+                </>
+              )}
             </Button>
           </div>
         )}
