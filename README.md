@@ -59,7 +59,7 @@ ecommerce-checkout/
 
 ### 🚀 One-Command Setup (Recommended)
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/ezra-en/DH-test/
 cd ecommerce-checkout
 
 # Install dependencies + migrate database + seed data
@@ -71,7 +71,7 @@ bun run dev
 
 ### Manual Setup
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/ezra-en/DH-test/
 cd ecommerce-checkout
 
 # Install backend dependencies
